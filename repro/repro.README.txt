@@ -1,0 +1,28 @@
+KernSight manual reproduction bundle
+
+repro.prog is the syzkaller testcase; repro.cprog is present when C conversion succeeded.
+repro.state.json is the latest measured 539-D state used before the original crash.
+It is not a QEMU RAM/device snapshot and cannot restore hidden kernel objects exactly.
+This reproducer was found by the state-primed path. The crash depends on
+the kernel state produced before it, so repro.prog alone is NOT enough.
+
+PREFERRED: run the single self-contained reproducer on a fresh VM:
+  syz-execprog -repeat=1 repro.kernsight.prog
+repro.kernsight.prog is the complete artifact: the state-reconstruction
+recipe (replayed crash-log tail plus model-selected priming programs)
+followed by the crashing testcase, in execution order. Check verified
+in repro.priming.json for independent replay confirmation.
+
+Equivalent step-by-step form:
+  1. boot a VM with the same kernel image;
+  2. run repro.priming.prog with syz-execprog (replayed crash-log tail plus
+     model-selected priming programs, in execution order);
+  3. immediately run repro.prog on the same VM.
+repro.priming.json holds the distance trace toward the target state
+and the testcase-selection trace (candidate_picks: which suspect ran,
+why it was picked and the model signal at pick time), and
+repro.achieved_state.json is the 539-D state measured right before the
+successful testcase run; compare your own collection against it.
+repro.target_state.raw.tgz / repro.achieved_state.raw.tgz are the raw
+five-tool JSON snapshots (pre-vector form: full dmesg log, process
+table, tool outputs) behind the target and achieved vectors.

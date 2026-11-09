@@ -1,0 +1,17 @@
+{
+  "achieved_raw_state": "repro.achieved_state.raw.tgz",
+  "achieved_state_file": "repro.achieved_state.json",
+  "c_testcase": "repro.cprog",
+  "format": "kernsight-reproduction-context-v1",
+  "original_crash_title": "INFO: task hung in bdev_open",
+  "primed_repro": true,
+  "priming_recipe": "repro.priming.prog",
+  "priming_report": "repro.priming.json",
+  "reproduced_title": "INFO: task hung in bdev_open",
+  "state_file": "repro.state.json",
+  "state_replay": "best-effort; the 539-D vector is observational and not a VM snapshot",
+  "syz_testcase": "repro.prog",
+  "target_raw_state": "repro.target_state.raw.tgz",
+  "verification_scope": "fresh_vm_recipe_replay",
+  "verified": true
+}
