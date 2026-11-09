@@ -42,5 +42,6 @@ hung-task reporting, the VM keeps running).
 | `repro/repro.state.json`, `repro/repro.context.json` | measured 539-D state, reproduction context |
 | `repro/repro.attempts.json`, `repro/repro.outcomes.jsonl` | repro attempt ledger |
 | `config-7.4.0-rc2-kernsight-kasan` | full kernel configuration |
+| `syzkaller.cfg` | syzkaller fuzzing configuration (VM type, guest image, kernel command line, QEMU args) |
 
 `REPORT-DRAFT.md` is the upstream-report email draft for this issue.

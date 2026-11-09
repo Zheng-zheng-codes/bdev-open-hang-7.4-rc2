@@ -18,7 +18,8 @@ reproduces with a single minimized syzkaller program on fresh VMs.
   (systemd-udevd present and participating in the hang)
 - Configuration: KASAN; `hung_task_panic=0`, so the machine kept running and
   the dump shows the blocked tasks; full .config is included in the repo
-- Fuzzing framework: syzkaller
+- Fuzzing framework: syzkaller (configuration including the guest image and
+  the full kernel command line is included as `syzkaller.cfg`)
 
 **Hang:**
 
