@@ -8,6 +8,13 @@ waiting on the same gendisk `open_mutex` inside `bdev_open()`
 (block/bdev.c:990) while opening block device nodes via `openat()`. The hang
 reproduces with a single minimized syzkaller program on fresh VMs.
 
+**All raw logs, crash reports, the reproducer and the kernel/fuzzing
+configurations are available at:**
+
+  https://github.com/Zheng-zheng-codes/bdev-open-hang-7.4-rc2
+
+Everything referenced below by relative path lives in that repository.
+
 **Kernel information:**
 
 - Kernel version: 7.4.0-rc2-kernsight-kasan #1
@@ -71,8 +78,7 @@ Call Trace:
 **Reproduction (step by step):**
 
 1. Kernel: any `v7.4-rc2` x86_64 build with KASAN enabled reproduces; our
-   exact configuration is `config-7.4.0-rc2-kernsight-kasan` in this
-   repository (KASAN inline instrumentation, hung-task detector enabled with
+   exact configuration is `config-7.4.0-rc2-kernsight-kasan` in the repository (KASAN inline instrumentation, hung-task detector enabled with
    the default 120 s timeout, `CONFIG_LOCALVERSION=-kernsight-kasan`).
 2. Guest: boot a systemd-based x86_64 root filesystem (we used a Debian
    trixie image; systemd-udevd must be present and active, since a udev
@@ -105,7 +111,7 @@ Call Trace:
   (kernel uptime at the hang report: ~4 minutes); additionally observed twice
   during concurrent fuzzing.
 
-**What is in this repository:**
+**What is in the repository above:**
 
 | file | content |
 |---|---|
