@@ -68,23 +68,62 @@ Call Trace:
   verification flow reproduced it 2/2 times on freshly replayed VMs with the
   minimized program, so this does not look like a one-off scheduling hiccup.
 
-**Reproduction:**
+**Reproduction (step by step):**
 
-- Minimized single-program reproducer: `repro/repro.prog` (program text) —
-  run `syz-execprog -repeat=1 repro.prog` on a fresh VM with the same kernel
-  image; `repro/repro.kernsight.prog` additionally prepends the
-  state-reconstruction recipe that was recorded before the hang.
+1. Kernel: any `v7.4-rc2` x86_64 build with KASAN enabled reproduces; our
+   exact configuration is `config-7.4.0-rc2-kernsight-kasan` in this
+   repository (KASAN inline instrumentation, hung-task detector enabled with
+   the default 120 s timeout, `CONFIG_LOCALVERSION=-kernsight-kasan`).
+2. Guest: boot a systemd-based x86_64 root filesystem (we used a Debian
+   trixie image; systemd-udevd must be present and active, since a udev
+   worker is one of the two hung tasks) in QEMU, e.g.:
+   `qemu-system-x86_64 -m 6144 -smp 4 -enable-kvm -cpu host -drive file=rootfs.img,if=ide -append "root=/dev/sda console=ttyS0 ..."`.
+   The full command line we used is in `syzkaller.cfg` (`vm.cmdline`);
+   `panic_on_warn=1` and `hung_task_panic=0` are set, so the hang shows up as
+   hung-task INFO dumps and the VM keeps running.
+3. Copy `syz-execprog` and `syz-executor` (built from any recent syzkaller
+   checkout for linux/amd64) into the guest, together with
+   `repro/repro.prog`.
+4. Run in the guest:
+
+   ```bash
+   ./syz-execprog -procs=8 -threaded -repeat=1 -executor ./syz-executor ./repro.prog
+   ```
+
+   `repro/repro.kernsight.prog` is the same crashing program preceded by the
+   recorded state-reconstruction recipe; it is the more robust variant if the
+   bare program alone does not trigger on your setup
+   (`./syz-execprog -repeat=1 ./repro.kernsight.prog`).
+
+5. Expected result: within roughly 2-4 minutes of VM uptime, hung-task dumps
+   appear on the console: two tasks (a `udev-worker` process and a
+   syz-executor process) blocked for >120 s in `bdev_open()` at
+   block/bdev.c:990, waiting on the same gendisk `open_mutex`. The guest keeps
+   running (hung_task_panic=0).
+
 - Reproduction results: 2 successful / 2 attempts on freshly replayed VMs
-  (kernel uptime at the hang report: ~4 minutes).
+  (kernel uptime at the hang report: ~4 minutes); additionally observed twice
+  during concurrent fuzzing.
 
-**Reproduction and logs:**
+**What is in this repository:**
 
-- Full kernel log: see `logs/log0`, `logs/log1` and `repro/repro.log`
-- Syzkaller reproducer: `repro/repro.prog` (minimized) and
-  `repro/repro.kernsight.prog` (recipe + program)
-- Kernel configuration: `config-7.4.0-rc2-kernsight-kasan`
-- Reproduction results: 2/2 verified on fresh VMs, observed twice during
-  fuzzing
+| file | content |
+|---|---|
+| `repro/repro.prog` | minimized single-program reproducer (plain syzkaller program text) |
+| `repro/repro.kernsight.prog` | same crashing program preceded by the recorded state-reconstruction recipe, in execution order |
+| `repro/repro.priming.prog` | the recipe alone (run it first, then `repro.prog` on the same VM) |
+| `repro/repro.README.txt` | notes on how the reproducer was produced and how to run it |
+| `repro/repro.report` | hung-task dump captured during the verification run |
+| `repro/repro.log` | verification-run execution log |
+| `repro/repro.state.json`, `repro/repro.context.json` | measured 539-D guest state right before the hang; reproduction context and metadata |
+| `repro/repro.attempts.json`, `repro/repro.outcomes.jsonl` | automatic repro attempt ledger (1 attempt, verified) |
+| `logs/log0`, `logs/log1` | raw syzkaller crash logs from the two fuzzing occurrences (with the executing-program context) |
+| `logs/report0`, `logs/report1` | the corresponding hung-task crash reports |
+| `logs/machineInfo0`, `logs/machineInfo1` | guest machine information |
+| `logs/pre_state0`, `logs/pre_state1` | 539-D pre-crash guest state vectors captured by the fuzzing pipeline |
+| `logs/crash-excerpt.txt` | tail of the verification-run report |
+| `config-7.4.0-rc2-kernsight-kasan` | full kernel configuration |
+| `syzkaller.cfg` | fuzzing configuration: guest image, full kernel command line, QEMU arguments, VM layout |
 
 Could you please advise whether this corresponds to a known issue (for
 example an open_mutex holder waiting on a device that never becomes ready),
